@@ -1,50 +1,37 @@
-# Welcome to your Expo app 👋
+# MyMe Assistant
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A premium, production-grade personal AI assistant mobile app built with React Native and Expo. Seamlessly integrates with third-party tools (via Composio architecture) while providing a high-end, responsive dark-mode user experience.
 
-## Get started
+## Features Built
 
-1. Install dependencies
+- **Premium Chat UI**: Responsive message bubbles, typing input, and inline interactive action cards (Tool Cards).
+- **Authentication**: Onboarding and Sign In screens with mock local persistence (via Expo Secure Store).
+- **Integrations**: A sleek Connections tab to view, search, connect, and disconnect third-party services.
+- **Settings & Profile**: Managing preferences, theme toggling, and app info.
+- **State Management**: Optimized data fetching and caching via `@tanstack/react-query`, and lightweight global UI state via `zustand`.
+- **Styling**: `nativewind` (Tailwind CSS) powered premium dark aesthetic.
 
-   ```bash
-   npm install
-   ```
+## Architecture & Layering
 
-2. Start the app
+We enforce strict separation of concerns:
 
-   ```bash
-   npx expo start
-   ```
+- **`app/`**: Expo Router topology defining navigation.
+- **`components/ui/`**: Pure UI elements (Shell, Buttons, Badges, Search).
+- **`components/chat/`**: Feature-specific components (Messages, Compose bar).
+- **`services/api.ts`**: The mocked API communication layer.
+- **`store/`**: Zustand singletons.
 
-In the output, you'll find options to open the app in a
+## How to replace Mocks with Real Backend
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The app relies on `services/api.ts`. Currently, this file returns static mocked promises with simulated network latency.
+To integrate the real backend (including Composio OAuth endpoints and ChatGPT API interactions):
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+1. Open `services/api.ts`.
+2. Replace the simulated `delay()` mock responses with real `fetch` or `axios` calls pointing to your API.
+3. Ensure the return types align with `types/index.ts`. No UI component refactoring is necessary as long as the types match.
 
-## Get a fresh project
+## Local Setup
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. `npm install`
+2. `npx expo start`
+3. Scan the QR code with your Expo Go app, or press `a`/`i` to launch an emulator.
