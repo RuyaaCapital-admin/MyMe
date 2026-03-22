@@ -5,12 +5,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a0a',
-        surface: '#171717',
-        primary: '#3b82f6',
-        text: '#ffffff',
-        muted: '#a3a3a3',
-        border: '#262626'
+        background: '#09090B', // Deep zinc-950 for absolute premium contrast
+        surface: '#18181B', // Zinc-900 for cards
+        primary: '#4F46E5', // Indigo-600 - a very sleek, modern premium brand color
+        text: '#FAFAFA', // Zinc-50
+        muted: '#A1A1AA', // Zinc-400
+        border: '#27272A' // Zinc-800
       }
     },
   },
