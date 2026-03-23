@@ -37,6 +37,10 @@ export default function ChatDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', id] });
       setLocalMessages([]); 
+    },
+    onError: (err: Error) => {
+      setLocalMessages([]);
+      Alert.alert('Message Failed', err.message || 'Could not send your message. Please try again.');
     }
   });
 

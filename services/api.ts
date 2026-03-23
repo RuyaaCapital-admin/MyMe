@@ -118,27 +118,43 @@ export const api = {
         return [];
       }
 
+      // Only fetch connections if user is authenticated
       let myConnections: any[] = [];
-      try {
-        const { data: connRes, error: connError } = await supabase.functions.invoke('myme-agent', {
-          body: { action: 'get_connections' }
-        });
-        if (!connError && connRes) {
-          myConnections = Array.isArray(connRes) ? connRes : [];
-        }
-      } catch (_) { /* user may not be authenticated */ }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        try {
+          const { data: connRes, error: connError } = await supabase.functions.invoke('myme-agent', {
+            body: { action: 'get_connections' }
+          });
+          if (!connError && connRes) {
+            myConnections = Array.isArray(connRes) ? connRes : [];
+          }
+        } catch (_) { /* silently skip */ }
+      }
 
       const allApps = Array.isArray(composioRes) ? composioRes : (composioRes?.items || []);
       const connectedAppNames = myConnections.map((c: any) => (c.appName || c.appUniqueId || '').toLowerCase());
 
-      return allApps.map((app: any) => ({
-        id: app.key || app.name || app.appId,
-        name: app.name || app.key || 'Unknown',
-        iconUrl: app.logo || app.meta?.logo || '',
-        description: app.description || `Integrate with ${app.name || app.key}`,
-        status: connectedAppNames.includes((app.key || app.name || '').toLowerCase()) ? 'connected' as const : 'disconnected' as const,
-        category: (app.categories && app.categories[0]) || (app.tags && app.tags[0]) || 'productivity'
-      }));
+      // Only use logo URLs from known reliable CDN domains; discard broken ones
+      const isReliableLogo = (url: string) => {
+        if (!url) return false;
+        try {
+          const hostname = new URL(url).hostname;
+          return ['googleapis.com', 'github.com', 'githubusercontent.com', 'composio.dev', 'cdn.composio.dev', 'simpleicons.org'].some(d => hostname.includes(d));
+        } catch { return false; }
+      };
+
+      return allApps.map((app: any) => {
+        const rawLogo = app.logo || app.meta?.logo || '';
+        return {
+          id: app.key || app.name || app.appId,
+          name: app.name || app.key || 'Unknown',
+          iconUrl: isReliableLogo(rawLogo) ? rawLogo : '',
+          description: app.description || `Integrate with ${app.name || app.key}`,
+          status: connectedAppNames.includes((app.key || app.name || '').toLowerCase()) ? 'connected' as const : 'disconnected' as const,
+          category: (app.categories && app.categories[0]) || (app.tags && app.tags[0]) || 'productivity'
+        };
+      });
     },
     toggleConnection: async (id: string, currentStatus: string): Promise<Integration> => {
       if (currentStatus === 'connected') {
