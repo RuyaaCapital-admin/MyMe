@@ -122,7 +122,12 @@ export default function SignInScreen() {
     setMagicLinkLoading(true);
     try {
       await saveEmail();
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({ 
+        email,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : 'https://my-me-xi.vercel.app',
+        }
+      });
       if (error) throw error;
       setSuccessText('✨ Magic link sent! Check your inbox.');
       startCooldown(60); // 60s cooldown to prevent 429
@@ -146,7 +151,9 @@ export default function SignInScreen() {
       return;
     }
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/(auth)/reset-password` : 'https://my-me-xi.vercel.app/(auth)/reset-password',
+      });
       if (error) throw error;
       setSuccessText('Password reset email sent! Check your inbox.');
     } catch (err: any) {
