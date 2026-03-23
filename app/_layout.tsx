@@ -10,9 +10,13 @@ import { useAuthStore } from '../store/useAuthStore';
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  const { session, isLoading } = useAuthStore();
+  const { session, isLoading, checkSession } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   useEffect(() => {
     if (isLoading) return;
