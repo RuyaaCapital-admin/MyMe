@@ -5,12 +5,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useEffect } from 'react';
 
 export default function MainLayout() {
-  const { checkAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   return (
     <Drawer 
       drawerContent={(props) => <CustomDrawerContent {...props} />}
