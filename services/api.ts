@@ -83,11 +83,57 @@ export const api = {
       const { data: history } = await supabase.from('messages').select('*').eq('chat_id', finalChatId).order('created_at', { ascending: true });
       const apiMessages = history?.map(m => ({ role: m.role, content: m.content })) || [{ role: 'user', content }];
 
-      // 3. Call Edge Function
-      const { data: agentResponse, error: agentError } = await supabase.functions.invoke('myme-agent', {
-        body: { action: 'chat', messages: apiMessages }
-      });
-      if (agentError) throw agentError;
+      // 3. Call Edge Function with Loop support
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeader = session ? `Bearer ${session.access_token}` : '';
+
+      let currentMessages = apiMessages;
+      let agentResponse = null;
+      let isDone = false;
+      let maxLoops = 5;
+
+      while (!isDone && maxLoops > 0) {
+        const { data, error: agentError } = await supabase.functions.invoke('myme-agent', {
+          body: { action: 'chat', messages: currentMessages },
+          headers: { Authorization: authHeader }
+        });
+        
+        if (agentError) throw agentError;
+        agentResponse = data;
+
+        if (agentResponse?.status === 'requires_action' && agentResponse.tool_call) {
+          console.log('Agent requires tool execution:', agentResponse.tool_call.function?.name);
+          
+          // Execute the tool
+          const { data: execData, error: execError } = await supabase.functions.invoke('myme-agent', {
+            body: { action: 'execute', tool_call: agentResponse.tool_call },
+            headers: { Authorization: authHeader }
+          });
+
+          if (execError) {
+             console.error('Tool execution failed:', execError);
+             isDone = true; // Stop on tool error or handle gracefully
+          } else {
+             // Send tool result back to agent
+             const { data: nextData, error: nextError } = await supabase.functions.invoke('myme-agent', {
+               body: { 
+                 action: 'chat', 
+                 messages: currentMessages,
+                 tool_id: agentResponse.tool_call.id,
+                 tool_result: execData.tool_result 
+               },
+               headers: { Authorization: authHeader }
+             });
+             
+             if (nextError) throw nextError;
+             agentResponse = nextData;
+             if (agentResponse?.status === 'completed') isDone = true;
+          }
+        } else {
+          isDone = true;
+        }
+        maxLoops--;
+      }
 
       if (agentResponse) {
         // 4. Save Assistant Response
@@ -110,8 +156,12 @@ export const api = {
   },
   integrations: {
     list: async (): Promise<Integration[]> => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeader = session ? `Bearer ${session.access_token}` : '';
+
       const { data: composioRes, error: edgeError } = await supabase.functions.invoke('myme-agent', {
-        body: { action: 'list_apps' }
+        body: { action: 'list_apps' },
+        headers: { Authorization: authHeader }
       });
       if (edgeError) {
         console.error('Edge function error (list_apps):', edgeError);
@@ -120,11 +170,11 @@ export const api = {
 
       // Only fetch connections if user is authenticated
       let myConnections: any[] = [];
-      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         try {
           const { data: connRes, error: connError } = await supabase.functions.invoke('myme-agent', {
-            body: { action: 'get_connections' }
+            body: { action: 'get_connections' },
+            headers: { Authorization: authHeader }
           });
           if (!connError && connRes) {
             myConnections = Array.isArray(connRes) ? connRes : [];
@@ -160,8 +210,12 @@ export const api = {
       if (currentStatus === 'connected') {
          throw new Error("Disconnection via UI not implemented yet.");
       }
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeader = session ? `Bearer ${session.access_token}` : '';
+
       const { data, error } = await supabase.functions.invoke('myme-agent', {
-        body: { action: 'connect', appName: id }
+        body: { action: 'connect', appName: id },
+        headers: { Authorization: authHeader }
       });
       if (error) throw error;
       if (data && data.redirectUrl) {
