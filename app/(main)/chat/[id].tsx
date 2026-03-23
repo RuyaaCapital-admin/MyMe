@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import { View, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { View, FlatList, KeyboardAvoidingView, Platform, TouchableOpacity, Alert } from 'react-native';
+import { useLocalSearchParams, Stack, useNavigation, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../services/api';
 import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { ChatComposer } from '../../../components/chat/ChatComposer';
 import { LoadingState } from '../../../components/ui/States';
 import { Message } from '../../../types';
-
-import { Menu, MoreVertical } from 'lucide-react-native';
-import { TouchableOpacity, Alert } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { Menu, MoreVertical, Blocks } from 'lucide-react-native';
 import { DrawerActions } from '@react-navigation/native';
 
 export default function ChatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
+  const router = useRouter();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
 
   const { data: messages, isLoading } = useQuery({
@@ -60,14 +58,19 @@ export default function ChatDetailScreen() {
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <TouchableOpacity onPress={() => Alert.alert('Chat Options', 'Manage this conversation', [
-              { text: 'Rename', onPress: () => {} },
-              { text: 'Archive', onPress: () => {} },
-              { text: 'Delete', onPress: () => {}, style: 'destructive' },
-              { text: 'Cancel', style: 'cancel' }
-            ])}>
-              <MoreVertical size={24} color="#A1A1AA" />
-            </TouchableOpacity>
+            <View className="flex-row items-center mr-2">
+              <TouchableOpacity onPress={() => router.push('/(main)/connections')} className="mr-5">
+                <Blocks size={20} color="#A1A1AA" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => Alert.alert('Chat Options', 'Manage this conversation', [
+                { text: 'Rename', onPress: () => {} },
+                { text: 'Archive', onPress: () => {} },
+                { text: 'Delete', onPress: () => {}, style: 'destructive' },
+                { text: 'Cancel', style: 'cancel' }
+              ])}>
+                <MoreVertical size={24} color="#A1A1AA" />
+              </TouchableOpacity>
+            </View>
           )
         }} 
       />
