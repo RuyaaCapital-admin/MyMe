@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Mail, Lock, Sparkles, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Shield } from 'lucide-react-native';
+import { Mail, Lock, Sparkles, UserPlus, Eye, EyeOff, AlertCircle, CheckCircle, Shield, ArrowLeft } from 'lucide-react-native';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
