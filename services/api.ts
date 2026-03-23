@@ -64,7 +64,7 @@ export const api = {
         finalChatId = newChat.id;
       } else {
         // Evaluate if it exists
-        const { data: chatCheck } = await supabase.from('chats').select('id').eq('id', chatId).single();
+        const { data: chatCheck } = await supabase.from('chats').select('id').eq('id', chatId).maybeSingle();
         if (!chatCheck) {
           await supabase.from('chats').insert({ id: chatId, title: content.substring(0, 30), user_id: user?.id });
         }
@@ -113,23 +113,31 @@ export const api = {
       const { data: composioRes, error: edgeError } = await supabase.functions.invoke('myme-agent', {
         body: { action: 'list_apps' }
       });
-      if (edgeError) throw edgeError;
+      if (edgeError) {
+        console.error('Edge function error (list_apps):', edgeError);
+        return [];
+      }
 
-      const { data: myConnections, error: connError } = await supabase.functions.invoke('myme-agent', {
-        body: { action: 'get_connections' }
-      });
-      if (connError) throw connError;
+      let myConnections: any[] = [];
+      try {
+        const { data: connRes, error: connError } = await supabase.functions.invoke('myme-agent', {
+          body: { action: 'get_connections' }
+        });
+        if (!connError && connRes) {
+          myConnections = Array.isArray(connRes) ? connRes : [];
+        }
+      } catch (_) { /* user may not be authenticated */ }
 
-      let allApps = composioRes?.items || composioRes || [];
-      const connectedAppNames = (myConnections || []).map((c: any) => c.appName);
+      const allApps = Array.isArray(composioRes) ? composioRes : (composioRes?.items || []);
+      const connectedAppNames = myConnections.map((c: any) => (c.appName || c.appUniqueId || '').toLowerCase());
 
       return allApps.map((app: any) => ({
-        id: app.name,
-        name: app.name,
-        iconUrl: app.logo || '',
-        description: app.description || `Integrate with ${app.name}`,
-        status: connectedAppNames.includes(app.name) ? 'connected' : 'disconnected',
-        category: (app.tags && app.tags[0]) || 'productivity'
+        id: app.key || app.name || app.appId,
+        name: app.name || app.key || 'Unknown',
+        iconUrl: app.logo || app.meta?.logo || '',
+        description: app.description || `Integrate with ${app.name || app.key}`,
+        status: connectedAppNames.includes((app.key || app.name || '').toLowerCase()) ? 'connected' as const : 'disconnected' as const,
+        category: (app.categories && app.categories[0]) || (app.tags && app.tags[0]) || 'productivity'
       }));
     },
     toggleConnection: async (id: string, currentStatus: string): Promise<Integration> => {

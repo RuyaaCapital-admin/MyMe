@@ -52,9 +52,14 @@ export default function ChatDetailScreen() {
           headerStyle: { backgroundColor: '#09090B' },
           headerTintColor: '#fff',
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())} style={{ marginLeft: 8, marginRight: 12 }}>
+              <Menu size={24} color="#FAFAFA" />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <View className="flex-row items-center mr-2">
-              <TouchableOpacity onPress={() => router.push('/(main)/connections')} className="mr-5">
+              <TouchableOpacity onPress={() => router.push('/(main)/connections' as any)} className="mr-5">
                 <Blocks size={20} color="#A1A1AA" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => Alert.alert('Chat Options', 'Manage this conversation', [
