@@ -97,13 +97,11 @@ export const api = {
           .eq("id", chatId)
           .maybeSingle();
         if (!chatCheck) {
-          await supabase
-            .from("chats")
-            .insert({
-              id: chatId,
-              title: content.substring(0, 30),
-              user_id: user?.id,
-            });
+          await supabase.from("chats").insert({
+            id: chatId,
+            title: content.substring(0, 30),
+            user_id: user?.id,
+          });
         }
       }
 
@@ -132,10 +130,7 @@ export const api = {
       })) || [{ role: "user", content }];
 
       // 3. Call Edge Function with Loop support
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const authHeader = session ? `Bearer ${session.access_token}` : "";
+      const authHeader = `Bearer ${session.access_token}`;
 
       let currentMessages = apiMessages;
       let agentResponse = null;
