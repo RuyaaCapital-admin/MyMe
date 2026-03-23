@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Integration } from '../../types';
 import { StatusBadge } from '../ui/DataDisplay';
 import { ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+
+function AppIcon({ name, iconUrl }: { name: string; iconUrl: string }) {
+  const [hasError, setHasError] = useState(false);
+  const initial = (name || '?').charAt(0).toUpperCase();
+
+  if (!iconUrl || hasError) {
+    return (
+      <View className="w-8 h-8 rounded-lg bg-primary/20 items-center justify-center">
+        <Text className="text-primary font-bold text-sm">{initial}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: iconUrl }}
+      className="w-8 h-8 rounded-lg"
+      resizeMode="contain"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export function IntegrationCard({ integration }: { integration: Integration }) {
   const router = useRouter();
@@ -11,15 +33,11 @@ export function IntegrationCard({ integration }: { integration: Integration }) {
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => router.push(`/(main)/connections/${integration.id}`)}
+      onPress={() => router.push(`/(main)/connections/${integration.id}` as any)}
       className="bg-surface rounded-3xl p-4 mb-3 border border-border flex-row items-center"
     >
       <View className="w-14 h-14 bg-background rounded-2xl items-center justify-center mr-4 border border-border">
-        {integration.iconUrl ? (
-          <Image source={{ uri: integration.iconUrl }} className="w-8 h-8 rounded-lg" resizeMode="contain" />
-        ) : (
-          <View className="w-8 h-8 rounded-lg bg-primary/20" />
-        )}
+        <AppIcon name={integration.name} iconUrl={integration.iconUrl || ''} />
       </View>
       
       <View className="flex-1 justify-center">
