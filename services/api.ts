@@ -110,27 +110,42 @@ export const api = {
   },
   integrations: {
     list: async (): Promise<Integration[]> => {
-      const { data, error } = await supabase.from('connections').select('*');
-      if (error) throw error;
-      
-      const baseApps: Integration[] = [
-        { id: 'gmail', name: 'Gmail', iconUrl: '', description: 'Read and send emails', status: 'disconnected' as any, category: 'productivity' },
-        { id: 'github', name: 'GitHub', iconUrl: '', description: 'Manage repositories', status: 'disconnected' as any, category: 'developer' },
-        { id: 'slack', name: 'Slack', iconUrl: '', description: 'Send and read messages', status: 'disconnected' as any, category: 'productivity' },
-        { id: 'notion', name: 'Notion', iconUrl: '', description: 'Manage workspaces', status: 'disconnected' as any, category: 'productivity' },
-        { id: 'googlecalendar', name: 'Google Calendar', iconUrl: '', description: 'Manage events', status: 'disconnected' as any, category: 'productivity' },
-      ];
-
-      return baseApps.map(app => {
-        const found = data?.find(c => c.app_name === app.id);
-        if (found) {
-          app.status = 'connected' as any;
-        }
-        return app;
+      const { data: composioRes, error: edgeError } = await supabase.functions.invoke('myme-agent', {
+        body: { action: 'list_apps' }
       });
+      if (edgeError) throw edgeError;
+
+      const { data: myConnections, error: connError } = await supabase.functions.invoke('myme-agent', {
+        body: { action: 'get_connections' }
+      });
+      if (connError) throw connError;
+
+      let allApps = composioRes?.items || composioRes || [];
+      const connectedAppNames = (myConnections || []).map((c: any) => c.appName);
+
+      return allApps.map((app: any) => ({
+        id: app.name,
+        name: app.name,
+        iconUrl: app.logo || '',
+        description: app.description || `Integrate with ${app.name}`,
+        status: connectedAppNames.includes(app.name) ? 'connected' : 'disconnected',
+        category: (app.tags && app.tags[0]) || 'productivity'
+      }));
     },
     toggleConnection: async (id: string, currentStatus: string): Promise<Integration> => {
-      throw new Error("Handle Composio OAuth flow manually");
-    }
+      if (currentStatus === 'connected') {
+         throw new Error("Disconnection via UI not implemented yet.");
+      }
+      const { data, error } = await supabase.functions.invoke('myme-agent', {
+        body: { action: 'connect', appName: id }
+      });
+      if (error) throw error;
+      if (data && data.redirectUrl) {
+        if (typeof window !== 'undefined') {
+          window.location.href = data.redirectUrl;
+        }
+      }
+      return { id, name: id, description: '', status: 'disconnected', category: '', iconUrl: '' };
+    },
   }
 };

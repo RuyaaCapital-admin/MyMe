@@ -40,11 +40,11 @@ function SettingsSection({ title, children }: any) {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { userId, checkAuth } = useAuthStore();
+  const { user, checkSession } = useAuthStore();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    checkAuth();
+    checkSession();
   };
 
   return (
@@ -63,10 +63,10 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <View className="flex-row items-center bg-surface/80 rounded-2xl p-4 mb-8 border border-border/50">
           <View className="w-16 h-16 rounded-full bg-indigo-600 items-center justify-center border-2 border-indigo-400">
-            <Text className="text-white font-bold text-2xl">M</Text>
+            <Text className="text-white font-bold text-2xl">{user?.email?.[0]?.toUpperCase() || 'M'}</Text>
           </View>
           <View className="ml-4 justify-center">
-            <Text className="text-zinc-100 font-bold text-xl">MyMe User</Text>
+            <Text className="text-zinc-100 font-bold text-lg">{user?.email || 'MyMe User'}</Text>
             <View className="flex-row items-center mt-1">
               <View className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
               <Text className="text-zinc-400 font-medium">Online</Text>

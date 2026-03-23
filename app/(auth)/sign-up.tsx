@@ -2,27 +2,27 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Mail, Lock, Sparkles, ArrowRight } from 'lucide-react-native';
+import { Mail, Lock, Sparkles, UserPlus } from 'lucide-react-native';
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { signup, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorText, setErrorText] = useState('');
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     setErrorText('');
-    if (!email || !password) {
-      setErrorText('Please enter both email and password.');
+    if (!email || !password || password.length < 6) {
+      setErrorText('Please enter a valid email and a 6+ character password.');
       return;
     }
     
     try {
-      await login(email, password);
+      await signup(email, password);
       // Wait for Auth check layout redirect
     } catch (err: any) {
-      setErrorText(err.message || 'Login failed. Check your credentials.');
+      setErrorText(err.message || 'Signup failed.');
     }
   };
 
@@ -38,9 +38,9 @@ export default function SignInScreen() {
           <View className="w-16 h-16 rounded-3xl bg-indigo-600 items-center justify-center mb-6 shadow-xl shadow-indigo-500/30">
             <Sparkles size={32} color="#fff" />
           </View>
-          <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
+          <Text className="text-3xl font-bold text-white mb-2">Create Account</Text>
           <Text className="text-zinc-400 text-center px-4">
-            Sign in to reconnect your tools and empower your assistant securely.
+            Join MyMe. The first true step to a personalized multi-agent workflow.
           </Text>
         </View>
 
@@ -65,7 +65,7 @@ export default function SignInScreen() {
               <Lock size={20} color="#A1A1AA" />
               <TextInput
                 className="flex-1 text-zinc-100 ml-3 py-1 font-medium"
-                placeholder="Password"
+                placeholder="Password (Min. 6 chars)"
                 placeholderTextColor="#52525B"
                 secureTextEntry
                 value={password}
@@ -78,32 +78,26 @@ export default function SignInScreen() {
             <Text className="text-red-400 text-sm font-medium mt-2">{errorText}</Text>
           ) : null}
 
-          <View className="flex-row justify-end mb-4">
-            <TouchableOpacity>
-              <Text className="text-indigo-400 font-medium text-sm">Forgot Password?</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity 
-            onPress={handleLogin}
+            onPress={handleSignup}
             disabled={isLoading}
-            className="bg-primary py-4 rounded-xl items-center flex-row justify-center shadow-lg shadow-indigo-500/20"
+            className="bg-indigo-600 py-4 rounded-xl items-center flex-row justify-center mt-4 shadow-lg shadow-indigo-500/20"
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Text className="text-white font-bold text-base mr-2">Login Securely</Text>
-                <ArrowRight size={18} color="#fff" />
+                <Text className="text-white font-bold text-base mr-2">Sign Up Securely</Text>
+                <UserPlus size={18} color="#fff" />
               </>
             )}
           </TouchableOpacity>
         </View>
 
         <View className="flex-row justify-center mt-8">
-          <Text className="text-zinc-400">Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-            <Text className="text-indigo-400 font-bold">Sign Up</Text>
+          <Text className="text-zinc-400">Already a member? </Text>
+          <TouchableOpacity onPress={() => router.push('/(auth)/sign-in')}>
+            <Text className="text-indigo-400 font-bold">Log In</Text>
           </TouchableOpacity>
         </View>
 

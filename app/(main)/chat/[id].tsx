@@ -49,14 +49,9 @@ export default function ChatDetailScreen() {
         options={{ 
           headerShown: true, 
           headerTitle: 'MyMe Assistant',
-          headerStyle: { backgroundColor: '#0a0a0a' },
+          headerStyle: { backgroundColor: '#09090B' },
           headerTintColor: '#fff',
           headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())} className="mr-0 ml-1">
-              <Menu size={24} color="#A1A1AA" />
-            </TouchableOpacity>
-          ),
           headerRight: () => (
             <View className="flex-row items-center mr-2">
               <TouchableOpacity onPress={() => router.push('/(main)/connections')} className="mr-5">

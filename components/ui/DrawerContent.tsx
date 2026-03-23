@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 
 export function CustomDrawerContent(props: any) {
   const router = useRouter();
-  const { userId } = useAuthStore();
+  const { user } = useAuthStore();
 
   const { data: chats } = useQuery({
     queryKey: ['chats'],
@@ -81,10 +81,10 @@ export function CustomDrawerContent(props: any) {
           onPress={() => router.push('/(main)/settings')}
         >
           <View className="w-10 h-10 rounded-full bg-primary items-center justify-center shadow-sm shadow-primary/30">
-            <Text className="text-white font-bold text-lg">M</Text>
+            <Text className="text-white font-bold text-lg">{user?.email?.[0]?.toUpperCase() || 'M'}</Text>
           </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-white font-bold">MyMe User</Text>
+          <View className="ml-3 flex-1 flex-col">
+            <Text className="text-white font-bold truncate text-sm" numberOfLines={1}>{user?.email || 'MyMe User'}</Text>
             <Text className="text-emerald-400 font-medium text-xs tracking-wide" numberOfLines={1}>Pro+ Subscription</Text>
           </View>
           <Settings size={20} color="#A1A1AA" />
