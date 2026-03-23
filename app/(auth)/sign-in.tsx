@@ -1,28 +1,84 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Mail, Lock, Sparkles, ArrowRight } from 'lucide-react-native';
+import { supabase } from '../../utils/supabase';
+import { Mail, Lock, Sparkles, ArrowRight, Eye, EyeOff, Wand2, AlertCircle, CheckCircle } from 'lucide-react-native';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignInScreen() {
   const router = useRouter();
   const { login, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorText, setErrorText] = useState('');
+  const [successText, setSuccessText] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  const [mode, setMode] = useState<'password' | 'magic'>('password');
+
+  const validateEmail = useCallback((text: string) => {
+    setEmail(text);
+    setErrorText('');
+    if (text.length > 0 && !EMAIL_REGEX.test(text)) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError('');
+    }
+  }, []);
 
   const handleLogin = async () => {
     setErrorText('');
-    if (!email || !password) {
-      setErrorText('Please enter both email and password.');
+    setSuccessText('');
+    if (!EMAIL_REGEX.test(email)) {
+      setErrorText('Please enter a valid email address.');
       return;
     }
-    
+    if (!password || password.length < 6) {
+      setErrorText('Password must be at least 6 characters.');
+      return;
+    }
     try {
       await login(email, password);
-      // Wait for Auth check layout redirect
     } catch (err: any) {
       setErrorText(err.message || 'Login failed. Check your credentials.');
+    }
+  };
+
+  const handleMagicLink = async () => {
+    setErrorText('');
+    setSuccessText('');
+    if (!EMAIL_REGEX.test(email)) {
+      setErrorText('Please enter a valid email address first.');
+      return;
+    }
+    setMagicLinkLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) throw error;
+      setSuccessText('Magic link sent! Check your inbox.');
+    } catch (err: any) {
+      setErrorText(err.message || 'Failed to send magic link.');
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setErrorText('');
+    setSuccessText('');
+    if (!EMAIL_REGEX.test(email)) {
+      setErrorText('Enter your email address first, then tap Forgot Password.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      setSuccessText('Password reset email sent! Check your inbox.');
+    } catch (err: any) {
+      setErrorText(err.message || 'Failed to send reset email.');
     }
   };
 
@@ -32,82 +88,157 @@ export default function SignInScreen() {
       className="flex-1 bg-[#09090B]"
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-1 justify-center px-6">
-        
-        <View className="items-center mb-12">
-          <View className="w-16 h-16 rounded-3xl bg-indigo-600 items-center justify-center mb-6 shadow-xl shadow-indigo-500/30">
-            <Sparkles size={32} color="#fff" />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+        <View className="flex-1 justify-center px-6 py-12">
+          
+          {/* Logo & Title */}
+          <View className="items-center mb-10">
+            <View className="w-20 h-20 rounded-[24px] bg-indigo-600 items-center justify-center mb-6" style={{ shadowColor: '#6366F1', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 24, elevation: 12 }}>
+              <Sparkles size={36} color="#fff" />
+            </View>
+            <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
+            <Text className="text-zinc-500 text-center text-base">
+              Sign in to your MyMe assistant
+            </Text>
           </View>
-          <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
-          <Text className="text-zinc-400 text-center px-4">
-            Sign in to reconnect your tools and empower your assistant securely.
-          </Text>
-        </View>
 
-        <View className="space-y-4">
-          <View>
-            <View className="flex-row items-center border border-border/50 bg-surface/50 rounded-xl px-4 py-3">
-              <Mail size={20} color="#A1A1AA" />
+          {/* Mode Switcher */}
+          <View className="flex-row bg-zinc-900 rounded-xl p-1 mb-6">
+            <TouchableOpacity
+              onPress={() => { setMode('password'); setErrorText(''); setSuccessText(''); }}
+              className={`flex-1 py-3 rounded-lg items-center ${mode === 'password' ? 'bg-zinc-800' : ''}`}
+            >
+              <Text className={`font-semibold ${mode === 'password' ? 'text-white' : 'text-zinc-500'}`}>Password</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setMode('magic'); setErrorText(''); setSuccessText(''); }}
+              className={`flex-1 py-3 rounded-lg items-center ${mode === 'magic' ? 'bg-zinc-800' : ''}`}
+            >
+              <Text className={`font-semibold ${mode === 'magic' ? 'text-white' : 'text-zinc-500'}`}>Magic Link</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Email Input */}
+          <View className="mb-4">
+            <View className={`flex-row items-center border rounded-xl px-4 py-3.5 ${emailError ? 'border-red-500/50 bg-red-500/5' : email && EMAIL_REGEX.test(email) ? 'border-green-500/30 bg-green-500/5' : 'border-zinc-800 bg-zinc-900/50'}`}>
+              <Mail size={20} color={emailError ? '#EF4444' : email && EMAIL_REGEX.test(email) ? '#22C55E' : '#71717A'} />
               <TextInput
-                className="flex-1 text-zinc-100 ml-3 py-1 font-medium"
+                className="flex-1 text-zinc-100 ml-3 py-0.5 text-base"
                 placeholder="Email Address"
                 placeholderTextColor="#52525B"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={validateEmail}
               />
+              {email.length > 0 && EMAIL_REGEX.test(email) && (
+                <CheckCircle size={18} color="#22C55E" />
+              )}
             </View>
+            {emailError ? (
+              <View className="flex-row items-center mt-1.5 ml-1">
+                <AlertCircle size={12} color="#EF4444" />
+                <Text className="text-red-400 text-xs ml-1">{emailError}</Text>
+              </View>
+            ) : null}
           </View>
 
-          <View>
-            <View className="flex-row items-center border border-border/50 bg-surface/50 rounded-xl px-4 py-3">
-              <Lock size={20} color="#A1A1AA" />
-              <TextInput
-                className="flex-1 text-zinc-100 ml-3 py-1 font-medium"
-                placeholder="Password"
-                placeholderTextColor="#52525B"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
+          {/* Password Input (only in password mode) */}
+          {mode === 'password' && (
+            <View className="mb-4">
+              <View className={`flex-row items-center border rounded-xl px-4 py-3.5 ${password.length > 0 && password.length < 6 ? 'border-amber-500/50 bg-amber-500/5' : 'border-zinc-800 bg-zinc-900/50'}`}>
+                <Lock size={20} color={password.length > 0 && password.length < 6 ? '#F59E0B' : '#71717A'} />
+                <TextInput
+                  className="flex-1 text-zinc-100 ml-3 py-0.5 text-base"
+                  placeholder="Password"
+                  placeholderTextColor="#52525B"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(t) => { setPassword(t); setErrorText(''); }}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  {showPassword ? <EyeOff size={20} color="#71717A" /> : <Eye size={20} color="#71717A" />}
+                </TouchableOpacity>
+              </View>
+              {password.length > 0 && password.length < 6 && (
+                <View className="flex-row items-center mt-1.5 ml-1">
+                  <AlertCircle size={12} color="#F59E0B" />
+                  <Text className="text-amber-400 text-xs ml-1">Password must be 6+ characters</Text>
+                </View>
+              )}
             </View>
-          </View>
+          )}
 
+          {/* Error / Success Messages */}
           {errorText ? (
-            <Text className="text-red-400 text-sm font-medium mt-2">{errorText}</Text>
+            <View className="flex-row items-center bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 mb-4">
+              <AlertCircle size={16} color="#EF4444" />
+              <Text className="text-red-400 text-sm ml-2 flex-1">{errorText}</Text>
+            </View>
+          ) : null}
+          {successText ? (
+            <View className="flex-row items-center bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2.5 mb-4">
+              <CheckCircle size={16} color="#22C55E" />
+              <Text className="text-green-400 text-sm ml-2 flex-1">{successText}</Text>
+            </View>
           ) : null}
 
-          <View className="flex-row justify-end mb-4">
-            <TouchableOpacity>
-              <Text className="text-indigo-400 font-medium text-sm">Forgot Password?</Text>
+          {/* Forgot Password (password mode) */}
+          {mode === 'password' && (
+            <View className="flex-row justify-end mb-5">
+              <TouchableOpacity onPress={handleForgotPassword}>
+                <Text className="text-indigo-400 font-medium text-sm">Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Action Button */}
+          {mode === 'password' ? (
+            <TouchableOpacity 
+              onPress={handleLogin}
+              disabled={isLoading}
+              className="py-4 rounded-xl items-center flex-row justify-center mb-4"
+              style={{ backgroundColor: '#4F46E5', shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Text className="text-white font-bold text-base mr-2">Sign In</Text>
+                  <ArrowRight size={18} color="#fff" />
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              onPress={handleMagicLink}
+              disabled={magicLinkLoading}
+              className="py-4 rounded-xl items-center flex-row justify-center mb-4"
+              style={{ backgroundColor: '#7C3AED', shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
+            >
+              {magicLinkLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Wand2 size={18} color="#fff" />
+                  <Text className="text-white font-bold text-base ml-2">Send Magic Link</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Sign Up Link */}
+          <View className="flex-row justify-center mt-6">
+            <Text className="text-zinc-500">Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/sign-up' as any)}>
+              <Text className="text-indigo-400 font-bold">Sign Up</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity 
-            onPress={handleLogin}
-            disabled={isLoading}
-            className="bg-primary py-4 rounded-xl items-center flex-row justify-center shadow-lg shadow-indigo-500/20"
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Text className="text-white font-bold text-base mr-2">Login Securely</Text>
-                <ArrowRight size={18} color="#fff" />
-              </>
-            )}
-          </TouchableOpacity>
         </View>
-
-        <View className="flex-row justify-center mt-8">
-          <Text className="text-zinc-400">Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/sign-up' as any)}>
-            <Text className="text-indigo-400 font-bold">Sign Up</Text>
-          </TouchableOpacity>
-        </View>
-
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
