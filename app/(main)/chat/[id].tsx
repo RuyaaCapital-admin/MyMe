@@ -8,9 +8,15 @@ import { ChatComposer } from '../../../components/chat/ChatComposer';
 import { LoadingState } from '../../../components/ui/States';
 import { Message } from '../../../types';
 
+import { Menu, MoreVertical } from 'lucide-react-native';
+import { TouchableOpacity, Alert } from 'react-native';
+import { useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+
 export default function ChatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
 
   const { data: messages, isLoading } = useQuery({
@@ -32,18 +38,15 @@ export default function ChatDetailScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', id] });
-      setLocalMessages([]); // Flush local queue on success, real data comes
+      setLocalMessages([]); 
     }
   });
 
-  const handleSend = (text: string) => {
-    sendMessageMutation.mutate(text);
-  };
-
+  const handleSend = (text: string) => sendMessageMutation.mutate(text);
   const displayMessages = [...(messages || []), ...localMessages];
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-[#09090B]">
       <Stack.Screen 
         options={{ 
           headerShown: true, 
@@ -51,6 +54,21 @@ export default function ChatDetailScreen() {
           headerStyle: { backgroundColor: '#0a0a0a' },
           headerTintColor: '#fff',
           headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())} className="mr-0 ml-1">
+              <Menu size={24} color="#A1A1AA" />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <TouchableOpacity onPress={() => Alert.alert('Chat Options', 'Manage this conversation', [
+              { text: 'Rename', onPress: () => {} },
+              { text: 'Archive', onPress: () => {} },
+              { text: 'Delete', onPress: () => {}, style: 'destructive' },
+              { text: 'Cancel', style: 'cancel' }
+            ])}>
+              <MoreVertical size={24} color="#A1A1AA" />
+            </TouchableOpacity>
+          )
         }} 
       />
       

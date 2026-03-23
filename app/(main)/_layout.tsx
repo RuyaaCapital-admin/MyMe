@@ -1,41 +1,30 @@
-import { Tabs } from 'expo-router';
-import { MessageSquare, Link2, Settings } from 'lucide-react-native';
+import React from 'react';
+import { Drawer } from 'expo-router/drawer';
+import { CustomDrawerContent } from '../../components/ui/DrawerContent';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useEffect } from 'react';
 
 export default function MainLayout() {
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   return (
-    <Tabs
+    <Drawer 
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#0a0a0a',
-          borderTopWidth: 1,
-          borderTopColor: '#262626',
+        drawerStyle: {
+          backgroundColor: '#09090B',
+          width: 320,
         },
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#a3a3a3',
       }}
     >
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Chat',
-          tabBarIcon: ({ color }) => <MessageSquare color={color} size={24} />,
-        }}
-      />
-      <Tabs.Screen
-        name="connections"
-        options={{
-          title: 'Connections',
-          tabBarIcon: ({ color }) => <Link2 color={color} size={24} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Settings color={color} size={24} />,
-        }}
-      />
-    </Tabs>
+      <Drawer.Screen name="chat" />
+      <Drawer.Screen name="connections" />
+      <Drawer.Screen name="settings" />
+    </Drawer>
   );
 }
