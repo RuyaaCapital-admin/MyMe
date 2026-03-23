@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../services/api';
+import * as Crypto from 'expo-crypto';
 
 export default function ChatIndex() {
   const router = useRouter();
@@ -17,7 +18,8 @@ export default function ChatIndex() {
       if (chats && chats.length > 0) {
         router.replace(`/(main)/chat/${chats[0].id}`);
       } else {
-        router.replace(`/(main)/chat/new`);
+        const newId = Crypto.randomUUID();
+        router.replace(`/(main)/chat/${newId}`);
       }
     }
   }, [chats, isLoading]);
